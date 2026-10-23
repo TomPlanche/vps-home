@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "warn"
+  },
+  "rules": {
+    "unicorn/no-empty-file": "off",
+    // Flags the standard `export {}` used to force a .d.ts file into module
+    // scope for `declare global`, which has no other spelling.
+    "unicorn/require-module-specifiers": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": ["**/*.svelte"]
+}

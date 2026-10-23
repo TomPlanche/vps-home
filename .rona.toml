@@ -1,0 +1,90 @@
+# Rona config of vps-home. It follows the git conventions of the project:
+#
+# - Commits: Conventional Commits 1.0.0, `<type>(<scope>)?: <summary>`. The
+#   subject has 72 characters at most and no trailing period. A breaking change
+#   has a `!` after the type or scope AND a `BREAKING CHANGE:` footer.
+# - Branches: `<type>/<TICKET>-<kebab-slug>`, without the ticket when there is
+#   none. Example: `feat/AFF-123-export-reservations`.
+#
+# The checks below run on the prompts of `rona -g -i` and `rona branch`. A
+# message written in the editor (`rona -g` without `-i`) is not checked: follow
+# the same rules by hand there.
+
+# Editor used to open commit_message.md in non-interactive mode.
+editor = "nano"
+
+# The types of Conventional Commits that the project uses.
+commit_types = ["feat", "fix", "perf", "refactor", "docs", "test", "build", "ci", "chore", "revert"]
+
+##########
+# COMMIT #
+##########
+
+# `type(scope)!: summary`, then the footers as git trailers, one per line, after
+# one blank line. The `\n` after `{message}` makes this blank line before the
+# first footer. Without a footer, git removes it (trailing newline).
+commit_template = "{commit_type}{?scope}({scope}){/scope}{?breaking}!{/breaking}: {message}\n{?ticket}\nRefs: {ticket}{/ticket}{?breaking}\nBREAKING CHANGE: {breaking}{/breaking}"
+
+# Order of the prompts after the type: the scope, the summary, then the footers.
+commit_fields_order = ["scope", "message", "breaking", "ticket"]
+
+# The summary: imperative, no trailing period, 60 characters at most, so that
+# the subject stays under 72 characters with the type and a short scope.
+[commit_message]
+prompt = "Summary (imperative, no trailing period)"
+validation = "^\\S.{0,58}[^.\\s]$"
+
+# The scope: optional, lowercase kebab-case. The candidates come from the scopes
+# of the last 50 commits.
+[[commit_extra_fields]]
+name = "scope"
+prompt = "Scope (optional)"
+kind = "select"
+required = false
+validation = "^[a-z0-9]+(-[a-z0-9]+)*$"
+prefetch.source = "command"
+prefetch.command = "git log -50 --pretty=format:%s"
+prefetch.extract_regex = "^\\w+\\((?P<value>[^)]*)\\)!?:"
+prefetch.deduplicate = true
+
+# A breaking change: what breaks and what to do. Empty for a normal commit. A
+# value adds the `!` and the `BREAKING CHANGE:` footer.
+[[commit_extra_fields]]
+name = "breaking"
+prompt = "Breaking change (empty if none)"
+kind = "text"
+required = false
+validation = "^\\S.{9,}$"
+
+# The ticket, for the `Refs:` footer. Its default comes from the branch name,
+# for example `feat/AFF-123-export-reservations` gives `AFF-123`.
+[[commit_extra_fields]]
+name = "ticket"
+prompt = "Ticket (empty if none)"
+kind = "text"
+required = false
+validation = "^[A-Z]+-[0-9]+$"
+prefetch.source = "branch"
+prefetch.extract_regex = "^[a-z]+/(?P<value>[A-Z]+-[0-9]+)-"
+
+##########
+# BRANCH #
+##########
+
+# `type/TICKET-slug`, or `type/slug` without a ticket.
+branch_template = "{branch_type}/{?ticket}{ticket}-{/ticket}{description}"
+
+# Order of the prompts after the type: the ticket, then the slug.
+branch_field_order = ["ticket", "description"]
+
+# The slug: lowercase kebab-case.
+[branch_description]
+prompt = "Slug (lowercase kebab-case)"
+validation = "^[a-z0-9]+(-[a-z0-9]+)*$"
+
+[[branch_extra_fields]]
+name = "ticket"
+prompt = "Ticket (empty if none)"
+kind = "text"
+required = false
+validation = "^[A-Z]+-[0-9]+$"
