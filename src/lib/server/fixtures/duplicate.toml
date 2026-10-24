@@ -1,0 +1,7 @@
+[[service]]
+name = "A"
+url = "https://a.example.com"
+
+[[service]]
+name = "A"
+url = "https://b.example.com"

@@ -1,0 +1,46 @@
+# The services of the home page. Copy this file to services.toml, or point
+# SERVICES_FILE at another path, then describe your own services.
+#
+# One [[service]] table per card, in the order of the page. The cards of the
+# same group sit together, and the groups keep the order of their first card.
+#
+#   name         what the card says, unique in the file
+#   url          where the card links to (http or https)
+#   group        the section of the card, "Services" when left out
+#   description  a line under the name
+#   host         the machine the service runs on
+
+[[service]]
+name = "Grafana"
+group = "Monitoring"
+url = "https://grafana.example.com"
+description = "Dashboards of the metrics"
+host = "home"
+
+[[service]]
+name = "Uptime Kuma"
+group = "Monitoring"
+url = "https://status.example.com"
+description = "Uptime of the public sites"
+host = "vps"
+
+[[service]]
+name = "Immich"
+group = "Media"
+url = "https://photos.example.com"
+description = "Photos and videos"
+host = "home"
+
+[[service]]
+name = "Paperless"
+group = "Documents"
+url = "http://10.0.0.4:8000"
+description = "Scanned documents"
+host = "home"
+
+[[service]]
+name = "Forgejo"
+group = "Code"
+url = "https://git.example.com"
+description = "Git repositories"
+host = "home"

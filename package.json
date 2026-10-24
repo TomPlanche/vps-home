@@ -20,7 +20,12 @@
     "lint:fix": "oxlint . --fix && eslint . --fix",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
-    "format-lint": "oxfmt --write . && oxlint . --fix && eslint . --fix"
+    "format-lint": "oxfmt --write . && oxlint . --fix && eslint . --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "smol-toml": "^1.9.1"
   },
   "devDependencies": {
     "@eslint/compat": "^2.1.1",
@@ -40,7 +45,8 @@
     "svelte-check": "^4.7.6",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.69.0",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "vitest": "^5.0.5"
   },
   "packageManager": "pnpm@12.4.1"
 }
