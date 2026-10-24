@@ -1,0 +1,42 @@
+@use "reset";
+
+:root {
+  // The palette of the portfolio and of vps-cron-ui: a near-black ground, one
+  // blue for the text, and signal colours that stay legible on it.
+  --bg: #121316;
+  --bg-raised: #17181c;
+  --fg: oklch(80.9% 0.105 251.813);
+  --line: color-mix(in srgb, currentcolor 25%, transparent);
+
+  --ok: #7bb661;
+  --fail: #d34516;
+  --warn: #d9a441;
+  --idle: #67737a;
+  --live: #4f9bff;
+
+  // No webfont: this page is the first thing opened, it has to show up at once.
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --gutter: clamp(1rem, 4vmin, 3rem);
+
+  color-scheme: dark;
+}
+
+html {
+  font-size: 100%;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  line-height: 1.5;
+
+  color: var(--fg);
+  background: var(--bg);
+
+  overscroll-behavior: none;
+}

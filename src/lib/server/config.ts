@@ -9,19 +9,7 @@ import { readFile } from "node:fs/promises";
 
 import { parse, TomlError } from "smol-toml";
 
-/** One card of the page. */
-export type Service = {
-  /** What the card says. Unique in the file. */
-  name: string;
-  /** The section the card sits in. */
-  group: string;
-  /** Where the card links to: the address the browser opens. */
-  url: string;
-  /** A line under the name. */
-  description?: string;
-  /** The machine the service runs on. */
-  host?: string;
-};
+import type { Service } from "$lib/services";
 
 /** A mistake in the file, worded for whoever edits it. */
 export class ConfigError extends Error {
