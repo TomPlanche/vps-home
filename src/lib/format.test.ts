@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatMs } from "./format";
+import { formatClock, formatMs } from "./format";
 
 describe("formatMs", () => {
   it.each([
@@ -12,5 +12,11 @@ describe("formatMs", () => {
     [1234, "1.2 s"]
   ])("formats %d as %s", (ms, text) => {
     expect(formatMs(ms)).toBe(text);
+  });
+});
+
+describe("formatClock", () => {
+  it("gives the hours, minutes and seconds", () => {
+    expect(formatClock(new Date(2026, 9, 25, 22, 41, 5).getTime())).toBe("22:41:05");
   });
 });

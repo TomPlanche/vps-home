@@ -1,27 +1,16 @@
 <script lang="ts">
-  import type { Checks } from "$lib/checks";
+  import { formatClock } from "$lib/format";
+  import { createLiveChecks, REFRESH_MS } from "$lib/live-checks.svelte";
 
   import ServiceCard from "$lib/components/ServiceCard.svelte";
 
   let { data } = $props();
 
-  /** The checks once they land. Until then, every checked card says it is checking. */
-  let checks = $state<Checks | undefined>(undefined);
+  /** Until the first round lands, every checked card says it is checking. */
+  const live = createLiveChecks();
 
-  $effect(() => {
-    let current = true;
-
-    void data.checks.then((result) => {
-      // A newer load can land first: only the checks of the current one count.
-      if (current) {
-        checks = result;
-      }
-    });
-
-    return () => {
-      current = false;
-    };
-  });
+  $effect(() => live.receive(data.checks));
+  $effect(() => live.start(REFRESH_MS));
 </script>
 
 {#if data.groups.length === 0}
@@ -29,6 +18,20 @@
     No services yet: describe them in the services file, see services.example.toml.
   </p>
 {:else}
+  <p class="meta">
+    <span>
+      {#if live.updatedAt}
+        checked at <time>{formatClock(live.updatedAt)}</time>, every {REFRESH_MS / 1000} s
+      {:else}
+        checking...
+      {/if}
+    </span>
+
+    {#if live.error}
+      <span class="error">last refresh failed: {live.error}</span>
+    {/if}
+  </p>
+
   {#each data.groups as group (group.name)}
     <section>
       <h2>{group.name}</h2>
@@ -36,7 +39,7 @@
       <ul>
         {#each group.services as service (service.name)}
           <li>
-            <ServiceCard {service} check={checks?.[service.name]} />
+            <ServiceCard {service} check={live.checks?.[service.name]} />
           </li>
         {/each}
       </ul>
@@ -66,5 +69,22 @@
 
   .note {
     opacity: 0.6;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.75rem;
+    opacity: 0.5;
+
+    time {
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  .error {
+    color: var(--fail);
   }
 </style>
