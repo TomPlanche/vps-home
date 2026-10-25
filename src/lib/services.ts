@@ -17,6 +17,8 @@ export type Service = {
   description?: string;
   /** The machine the service runs on. */
   host?: string;
+  /** Whether the server checks it, so whether the card has a status at all. */
+  checked: boolean;
 };
 
 /** One section of the page: a group name and its services. */

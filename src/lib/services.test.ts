@@ -5,7 +5,8 @@ import { groupServices, type Service } from "./services";
 const service = (name: string, group: string): Service => ({
   name,
   group,
-  url: `https://${name.toLowerCase()}.example.com`
+  url: `https://${name.toLowerCase()}.example.com`,
+  checked: true
 });
 
 describe("groupServices", () => {

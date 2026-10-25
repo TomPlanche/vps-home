@@ -1,7 +1,27 @@
 <script lang="ts">
+  import type { Checks } from "$lib/checks";
+
   import ServiceCard from "$lib/components/ServiceCard.svelte";
 
   let { data } = $props();
+
+  /** The checks once they land. Until then, every checked card says it is checking. */
+  let checks = $state<Checks | undefined>(undefined);
+
+  $effect(() => {
+    let current = true;
+
+    void data.checks.then((result) => {
+      // A newer load can land first: only the checks of the current one count.
+      if (current) {
+        checks = result;
+      }
+    });
+
+    return () => {
+      current = false;
+    };
+  });
 </script>
 
 {#if data.groups.length === 0}
@@ -16,7 +36,7 @@
       <ul>
         {#each group.services as service (service.name)}
           <li>
-            <ServiceCard {service} />
+            <ServiceCard {service} check={checks?.[service.name]} />
           </li>
         {/each}
       </ul>

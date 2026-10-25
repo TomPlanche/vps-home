@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { stringify } from "smol-toml";
 import { describe, expect, it } from "vitest";
 
-import { ConfigError, DEFAULT_GROUP, loadServices, parseServices } from "./config";
+import { ConfigError, DEFAULT_GROUP, loadServices, parseServices, toPublic } from "./config";
 
 /** A services file of these tables, so each case reads as data rather than as TOML. */
 const file = (...services: Record<string, unknown>[]): string => stringify({ service: services });
@@ -25,14 +25,18 @@ describe("parseServices", () => {
         group: "Monitoring",
         url: "https://grafana.example.com",
         description: "Dashboards",
-        host: "home"
+        host: "home",
+        checked: true,
+        check: "https://grafana.example.com"
       },
       {
         name: "Forgejo",
         group: DEFAULT_GROUP,
         url: "http://10.0.0.4:3000",
         description: undefined,
-        host: undefined
+        host: undefined,
+        checked: true,
+        check: "http://10.0.0.4:3000"
       }
     ]);
   });
@@ -54,9 +58,23 @@ describe("parseServices", () => {
     ["a number for a string", { ...grafana, name: 3 }, "`name` must be a non-empty string"],
     ["a url that is not http", { ...grafana, url: "ftp://a.example.com" }, "http or https URL"],
     ["a url that is not a url", { ...grafana, url: "photos" }, "http or https URL"],
-    ["an unknown key", { ...grafana, link: "x" }, "unknown key `link`"]
+    ["an unknown key", { ...grafana, link: "x" }, "unknown key `link`"],
+    ["a check that is not a url", { ...grafana, check: "health" }, "`check` must be"],
+    ["a check that is a number", { ...grafana, check: 200 }, "`check` must be"]
   ])("refuses %s", (_, service, message) => {
     expect(() => parseServices(file(service))).toThrow(message);
+  });
+
+  it.each([
+    ["left out", {}, "https://grafana.example.com"],
+    ["true", { check: true }, "https://grafana.example.com"],
+    ["false", { check: false }, null],
+    ["a URL", { check: " http://10.0.0.4:3030/api/health " }, "http://10.0.0.4:3030/api/health"]
+  ])("reads a check %s", (_, fields, check) => {
+    const [service] = parseServices(file({ ...grafana, ...fields }));
+
+    expect(service.check).toBe(check);
+    expect(service.checked).toBe(check !== null);
   });
 
   it("refuses two services with the same name", () => {
@@ -80,6 +98,15 @@ describe("parseServices", () => {
 name = "Grafana`;
 
     expect(() => parseServices(broken)).toThrow(/^line 2, column \d+: /);
+  });
+});
+
+describe("toPublic", () => {
+  it("leaves the check address on the server", () => {
+    const [service] = parseServices(file({ ...grafana, check: "http://10.0.0.4:3030/api/health" }));
+
+    expect(toPublic(service)).not.toHaveProperty("check");
+    expect(JSON.stringify(toPublic(service))).not.toContain("10.0.0.4");
   });
 });
 

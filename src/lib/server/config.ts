@@ -11,6 +11,17 @@ import { parse, TomlError } from "smol-toml";
 
 import type { Service } from "$lib/services";
 
+/**
+ * A service as the server knows it: the card, and the address it checks.
+ *
+ * The check address stays on the server. It is often a private one, and the
+ * browser has nothing to do with it.
+ */
+export type ServiceConfig = Service & {
+  /** The URL the server requests to tell whether the service answers, or `null` for none. */
+  check: string | null;
+};
+
 /** A mistake in the file, worded for whoever edits it. */
 export class ConfigError extends Error {
   override name = "ConfigError";
@@ -20,7 +31,7 @@ export class ConfigError extends Error {
 export const DEFAULT_GROUP = "Services";
 
 /** Every key a `[[service]]` table may hold. Anything else is a typo. */
-const KEYS = new Set(["name", "group", "url", "description", "host"]);
+const KEYS = new Set(["name", "group", "url", "description", "host", "check"]);
 
 const isTable = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -63,13 +74,36 @@ const requiredText = (table: Record<string, unknown>, key: string, where: string
   return value;
 };
 
+/**
+ * Reads `check`: left out (or `true`), the server checks `url`; `false` turns the
+ * check off; a URL checks that address instead, typically a private one or a
+ * health endpoint.
+ */
+const readCheck = (table: Record<string, unknown>, url: string, where: string): string | null => {
+  const value = table.check;
+
+  if (value === undefined || value === true) {
+    return url;
+  }
+
+  if (value === false) {
+    return null;
+  }
+
+  if (typeof value !== "string" || !isWebUrl(value.trim())) {
+    throw new ConfigError(`${where}: \`check\` must be an http or https URL, or false`);
+  }
+
+  return value.trim();
+};
+
 /** "service 3", or "service 3 (Grafana)" once the name is known. */
 const describe = (index: number, table: Record<string, unknown>): string =>
   typeof table.name === "string" && table.name.trim() !== ""
     ? `service ${index + 1} (${table.name.trim()})`
     : `service ${index + 1}`;
 
-const parseService = (value: unknown, index: number): Service => {
+const parseService = (value: unknown, index: number): ServiceConfig => {
   if (!isTable(value)) {
     throw new ConfigError(`service ${index + 1}: expected a [[service]] table`);
   }
@@ -86,21 +120,35 @@ const parseService = (value: unknown, index: number): Service => {
     throw new ConfigError(`${where}: \`url\` must be an http or https URL, got "${url}"`);
   }
 
+  const check = readCheck(value, url, where);
+
   return {
     name: requiredText(value, "name", where),
     group: optionalText(value, "group", where) ?? DEFAULT_GROUP,
     url,
     description: optionalText(value, "description", where),
-    host: optionalText(value, "host", where)
+    host: optionalText(value, "host", where),
+    checked: check !== null,
+    check
   };
 };
+
+/** The card alone, without the check address, for the page data. */
+export const toPublic = (service: ServiceConfig): Service => ({
+  name: service.name,
+  group: service.group,
+  url: service.url,
+  description: service.description,
+  host: service.host,
+  checked: service.checked
+});
 
 /**
  * The services of a TOML document, in the order of the file.
  *
  * @throws {ConfigError} on invalid TOML or on a service the page cannot show.
  */
-export const parseServices = (source: string): Service[] => {
+export const parseServices = (source: string): ServiceConfig[] => {
   let document: Record<string, unknown>;
 
   try {
@@ -143,7 +191,7 @@ export const parseServices = (source: string): Service[] => {
  *
  * @throws {ConfigError} when the file is missing or invalid.
  */
-export const loadServices = async (path: string): Promise<Service[]> => {
+export const loadServices = async (path: string): Promise<ServiceConfig[]> => {
   let source: string;
 
   try {
