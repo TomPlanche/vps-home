@@ -1,6 +1,7 @@
 <script lang="ts">
   import { formatClock } from "$lib/format";
   import { createLiveChecks, REFRESH_MS } from "$lib/live-checks.svelte";
+  import { describeSummary, summarize } from "$lib/summary";
 
   import ServiceCard from "$lib/components/ServiceCard.svelte";
 
@@ -8,6 +9,25 @@
 
   /** Until the first round lands, every checked card says it is checking. */
   const live = createLiveChecks();
+
+  const checkedNames = $derived(
+    data.groups.flatMap((group) =>
+      group.services.filter((service) => service.checked).map((service) => service.name)
+    )
+  );
+
+  const summary = $derived(summarize(checkedNames, live.checks));
+
+  /** The colour of the worst state on the page. */
+  const summaryColor = $derived(
+    summary.down > 0
+      ? "var(--fail)"
+      : summary.failing > 0
+        ? "var(--warn)"
+        : summary.checking > 0
+          ? "var(--live)"
+          : "var(--ok)"
+  );
 
   $effect(() => live.receive(data.checks));
   $effect(() => live.start(REFRESH_MS));
@@ -18,6 +38,10 @@
     No services yet: describe them in the services file, see services.example.toml.
   </p>
 {:else}
+  {#if checkedNames.length > 0}
+    <p class="summary" style:color={summaryColor}>{describeSummary(summary)}</p>
+  {/if}
+
   <p class="meta">
     <span>
       {#if live.updatedAt}
@@ -69,6 +93,12 @@
 
   .note {
     opacity: 0.6;
+  }
+
+  .summary {
+    margin-bottom: 0.25rem;
+    font-size: 1.1rem;
+    letter-spacing: 0.04em;
   }
 
   .meta {
