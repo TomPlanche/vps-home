@@ -2,18 +2,20 @@
   import "$lib/styles/main.scss";
 
   import { resolve } from "$app/paths";
+  import { SITE_NAME } from "$lib/summary";
 
   let { children } = $props();
 </script>
 
 <svelte:head>
-  <title>vps-home</title>
+  <!-- The page puts the problems in front of it; this one is for the error page. -->
+  <title>{SITE_NAME}</title>
   <meta name="description" content="The services of my servers." />
 </svelte:head>
 
 <header>
   <a href={resolve("/")}>
-    <h1>vps-home</h1>
+    <h1>{SITE_NAME}</h1>
   </a>
 </header>
 

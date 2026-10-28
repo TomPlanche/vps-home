@@ -1,7 +1,7 @@
 <script lang="ts">
   import { formatClock } from "$lib/format";
   import { createLiveChecks, REFRESH_MS } from "$lib/live-checks.svelte";
-  import { describeSummary, summarize } from "$lib/summary";
+  import { describeSummary, summarize, tabTitle } from "$lib/summary";
 
   import ServiceCard from "$lib/components/ServiceCard.svelte";
 
@@ -32,6 +32,10 @@
   $effect(() => live.receive(data.checks));
   $effect(() => live.start(REFRESH_MS));
 </script>
+
+<svelte:head>
+  <title>{tabTitle(summary)}</title>
+</svelte:head>
 
 {#if data.groups.length === 0}
   <p class="note">

@@ -42,3 +42,18 @@ export const describeSummary = (summary: Summary): string => {
     .map((state) => `${summary[state]} ${state}`)
     .join(", ");
 };
+
+/** The name of the page, in the title of its tab. */
+export const SITE_NAME = "vps-home";
+
+/**
+ * The title of the tab: the problems first, since a tab only shows the start of
+ * its title. "1 down, 1 failing · vps-home", or just "vps-home" when all is well.
+ */
+export const tabTitle = (summary: Summary): string => {
+  const problems = (["down", "failing"] as const)
+    .filter((state) => summary[state] > 0)
+    .map((state) => `${summary[state]} ${state}`);
+
+  return problems.length > 0 ? `${problems.join(", ")} · ${SITE_NAME}` : SITE_NAME;
+};

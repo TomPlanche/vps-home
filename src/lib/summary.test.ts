@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Checks } from "./checks";
-import { describeSummary, summarize } from "./summary";
+import { describeSummary, SITE_NAME, summarize, tabTitle } from "./summary";
 
 const checks: Checks = {
   Grafana: { state: "up", status: 200, ms: 12 },
@@ -40,5 +40,16 @@ describe("describeSummary", () => {
     [{ up: 2, failing: 0, down: 0, checking: 1 }, "2 up, 1 checking"]
   ])("describes %o as %j", (summary, text) => {
     expect(describeSummary(summary)).toBe(text);
+  });
+});
+
+describe("tabTitle", () => {
+  it.each([
+    [{ up: 6, failing: 0, down: 0, checking: 0 }, SITE_NAME],
+    [{ up: 0, failing: 0, down: 0, checking: 6 }, SITE_NAME],
+    [{ up: 5, failing: 1, down: 0, checking: 0 }, `1 failing · ${SITE_NAME}`],
+    [{ up: 3, failing: 1, down: 2, checking: 0 }, `2 down, 1 failing · ${SITE_NAME}`]
+  ])("titles %o %j", (summary, title) => {
+    expect(tabTitle(summary)).toBe(title);
   });
 });
