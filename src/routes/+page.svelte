@@ -29,7 +29,7 @@
           : "var(--ok)"
   );
 
-  $effect(() => live.receive(data.checks));
+  $effect(() => live.receive(data.round));
   $effect(() => live.start(REFRESH_MS));
 </script>
 

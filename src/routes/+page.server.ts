@@ -1,5 +1,5 @@
 import { toPublic } from "$lib/server/config";
-import { currentChecks } from "$lib/server/rounds";
+import { currentRound } from "$lib/server/rounds";
 import { readServices } from "$lib/server/services";
 import { groupServices } from "$lib/services";
 
@@ -11,7 +11,7 @@ export const load: PageServerLoad = async () => {
   return {
     groups: groupServices(services.map((service) => toPublic(service))),
     // Not awaited: the page shows the cards at once, and SvelteKit streams the
-    // checks in when the slowest of them is done. A round never rejects.
-    checks: currentChecks(services)
+    // round in when the slowest check is done. A round never rejects.
+    round: currentRound(services)
   };
 };

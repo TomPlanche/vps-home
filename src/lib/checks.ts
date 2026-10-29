@@ -19,3 +19,20 @@ export type Check = {
 
 /** The checks of a round, by service name. A service that is not checked has none. */
 export type Checks = Record<string, Check>;
+
+/** One past check of a service, as small as a bar of the history needs. */
+export type HistoryEntry = {
+  /** When the round of this check ended. */
+  at: number;
+  state: CheckState;
+  ms: number;
+};
+
+/** The last checks of each service, oldest first, by service name. */
+export type History = Record<string, HistoryEntry[]>;
+
+/** What the server sends for a round: the checks, and the history they end. */
+export type Round = {
+  checks: Checks;
+  history: History;
+};

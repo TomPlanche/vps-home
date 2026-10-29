@@ -6,10 +6,11 @@
  * the same second, and a slow service holds three of them open.
  */
 
-import type { Checks } from "$lib/checks";
+import type { Checks, Round } from "$lib/checks";
 
 import { checkAll } from "./checks";
 import type { ServiceConfig } from "./config";
+import { createHistory } from "./history";
 
 /**
  * How long a round answers for. Shorter than the refresh of the page, so a tab
@@ -17,7 +18,7 @@ import type { ServiceConfig } from "./config";
  */
 export const ROUND_TTL_MS = 10_000;
 
-type Round = {
+type SharedRound = {
   /** The services the round checks: an edit of the file starts a new one. */
   key: string;
   startedAt: number;
@@ -35,7 +36,7 @@ export const createRounds = (
   ttlMs = ROUND_TTL_MS,
   now: () => number = Date.now
 ): ((services: ServiceConfig[]) => Promise<Checks>) => {
-  let last: Round | undefined;
+  let last: SharedRound | undefined;
 
   return (services) => {
     const key = JSON.stringify(services.map((service) => [service.name, service.check]));
@@ -50,5 +51,20 @@ export const createRounds = (
   };
 };
 
-/** The rounds of this server, shared by the page and `/api/checks`. */
-export const currentChecks = createRounds();
+/** The last checks of this server. A round adds to it once, when it ends. */
+const history = createHistory();
+
+/** The rounds of this server, each recorded in the history when it ends. */
+const currentChecks = createRounds(async (services) => {
+  const checks = await checkAll(services);
+  history.record(checks, Date.now());
+  return checks;
+});
+
+/** The current round and the history it ends, for the page and `/api/checks`. */
+export const currentRound = async (services: ServiceConfig[]): Promise<Round> => {
+  const checks = await currentChecks(services);
+  const checked = services.filter((service) => service.checked).map((service) => service.name);
+
+  return { checks, history: history.snapshot(checked) };
+};

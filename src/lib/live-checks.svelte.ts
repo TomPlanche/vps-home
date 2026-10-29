@@ -2,20 +2,22 @@
 
 import { resolve } from "$app/paths";
 
-import type { Checks } from "$lib/checks";
+import type { Checks, History, Round } from "$lib/checks";
 
 /** How often the page asks for a new round of checks. */
 export const REFRESH_MS = 30_000;
 
 export type LiveChecks = {
-  /** The latest round, kept across a failed refresh. */
+  /** The checks of the latest round, kept across a failed refresh. */
   readonly checks: Checks | undefined;
+  /** The last checks of each service, up to the latest round. */
+  readonly history: History | undefined;
   /** When the latest round landed. */
   readonly updatedAt: number | undefined;
   /** Why the last refresh failed, cleared by the next one that works. */
   readonly error: string | undefined;
   /** Takes the round the page load streams in. Returns a teardown. */
-  receive: (pending: Promise<Checks>) => () => void;
+  receive: (pending: Promise<Round>) => () => void;
   /** Asks for a new round, now. */
   refresh: () => Promise<void>;
   /** Refreshes every `intervalMs` until the returned teardown runs. */
@@ -24,18 +26,20 @@ export type LiveChecks = {
 
 export const createLiveChecks = (): LiveChecks => {
   let checks = $state<Checks | undefined>(undefined);
+  let history = $state<History | undefined>(undefined);
   let updatedAt = $state<number | undefined>(undefined);
   let error = $state<string | undefined>(undefined);
 
   let inFlight: AbortController | undefined;
 
-  const set = (next: Checks): void => {
-    checks = next;
+  const set = (next: Round): void => {
+    checks = next.checks;
+    history = next.history;
     updatedAt = Date.now();
     error = undefined;
   };
 
-  const receive = (pending: Promise<Checks>): (() => void) => {
+  const receive = (pending: Promise<Round>): (() => void) => {
     let current = true;
 
     void pending.then((next) => {
@@ -65,7 +69,7 @@ export const createLiveChecks = (): LiveChecks => {
         throw new Error(`${response.status} ${response.statusText}`);
       }
 
-      const next = (await response.json()) as Checks;
+      const next = (await response.json()) as Round;
       if (!controller.signal.aborted) {
         set(next);
       }
@@ -123,6 +127,9 @@ export const createLiveChecks = (): LiveChecks => {
   return {
     get checks() {
       return checks;
+    },
+    get history() {
+      return history;
     },
     get updatedAt() {
       return updatedAt;
