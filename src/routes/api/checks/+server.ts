@@ -1,14 +1,14 @@
 import { json } from "@sveltejs/kit";
 
-import { checkAll } from "$lib/server/checks";
+import { currentChecks } from "$lib/server/rounds";
 import { readServices } from "$lib/server/services";
 
 import type { RequestHandler } from "./$types";
 
-/** `GET /api/checks`: a new round of checks, for the page to refresh its cards. */
+/** `GET /api/checks`: the current round of checks, for the page to refresh its cards. */
 export const GET: RequestHandler = async () => {
-  const checks = await checkAll(await readServices());
+  const checks = await currentChecks(await readServices());
 
-  // Each request is a new round: nothing on the way may answer with an old one.
+  // The server decides how old a round may be: nothing on the way may keep one.
   return json(checks, { headers: { "cache-control": "no-store" } });
 };
