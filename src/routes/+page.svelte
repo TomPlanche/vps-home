@@ -67,7 +67,11 @@
       <ul>
         {#each group.services as service (service.name)}
           <li>
-            <ServiceCard {service} check={live.checks?.[service.name]} />
+            <ServiceCard
+              {service}
+              check={live.checks?.[service.name]}
+              history={live.history?.[service.name]}
+            />
           </li>
         {/each}
       </ul>

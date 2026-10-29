@@ -7,10 +7,7 @@
  * the page can tell.
  */
 
-import type { Checks, History, HistoryEntry } from "$lib/checks";
-
-/** How many checks each service keeps: 15 minutes of rounds every 30 seconds. */
-export const HISTORY_SIZE = 30;
+import { HISTORY_SIZE, type Checks, type History, type HistoryEntry } from "$lib/checks";
 
 export type CheckHistory = {
   /** Adds the checks of a round that ended at `at`. */

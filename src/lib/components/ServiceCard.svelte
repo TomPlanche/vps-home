@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { Check } from "$lib/checks";
+  import type { Check, HistoryEntry } from "$lib/checks";
   import { formatMs } from "$lib/format";
   import type { Service } from "$lib/services";
 
+  import HistoryBar from "$lib/components/HistoryBar.svelte";
   import StatusTag from "$lib/components/StatusTag.svelte";
   import Tag from "$lib/components/Tag.svelte";
 
@@ -10,9 +11,11 @@
     service: Service;
     /** Its last check, or nothing while the first one runs. */
     check?: Check;
+    /** Its last checks, oldest first. */
+    history?: HistoryEntry[];
   };
 
-  let { service, check }: Props = $props();
+  let { service, check, history }: Props = $props();
 
   /** The address without its scheme: what tells two instances apart at a glance. */
   const address = $derived(URL.parse(service.url)?.host ?? service.url);
@@ -41,6 +44,10 @@
 
   {#if service.description}
     <p class="description">{service.description}</p>
+  {/if}
+
+  {#if service.checked}
+    <HistoryBar entries={history ?? []} />
   {/if}
 
   <footer>

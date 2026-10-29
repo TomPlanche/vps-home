@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Check, CheckState } from "$lib/checks";
+  import { STATE_COLORS, type Check } from "$lib/checks";
 
   import Tag from "$lib/components/Tag.svelte";
 
@@ -9,12 +9,6 @@
   };
 
   let { check }: Props = $props();
-
-  const COLORS: Record<CheckState, string> = {
-    up: "var(--ok)",
-    failing: "var(--warn)",
-    down: "var(--fail)"
-  };
 
   /** A failing service shows its status code: "503" says more than "failing". */
   const label = $derived(
@@ -26,6 +20,6 @@
   );
 </script>
 
-<Tag color={check ? COLORS[check.state] : "var(--live)"} pulse={check === undefined}>
+<Tag color={check ? STATE_COLORS[check.state] : "var(--live)"} pulse={check === undefined}>
   {label}
 </Tag>

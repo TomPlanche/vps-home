@@ -7,6 +7,13 @@
  */
 export type CheckState = "up" | "failing" | "down";
 
+/** The colour of each state, as a CSS custom property. */
+export const STATE_COLORS: Record<CheckState, string> = {
+  up: "var(--ok)",
+  failing: "var(--warn)",
+  down: "var(--fail)"
+};
+
 export type Check = {
   state: CheckState;
   /** The HTTP status, when something answered. */
@@ -27,6 +34,9 @@ export type HistoryEntry = {
   state: CheckState;
   ms: number;
 };
+
+/** How many checks the server keeps for each service: 15 minutes of rounds every 30 seconds. */
+export const HISTORY_SIZE = 30;
 
 /** The last checks of each service, oldest first, by service name. */
 export type History = Record<string, HistoryEntry[]>;
