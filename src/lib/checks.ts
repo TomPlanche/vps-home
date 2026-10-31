@@ -1,5 +1,7 @@
 /** What a check found, shared by the server that runs it and the page that shows it. */
 
+import type { Widgets } from "$lib/widgets";
+
 /**
  * - `up`: the service answered with a status below 400.
  * - `failing`: it answered, with an error status.
@@ -41,8 +43,9 @@ export const HISTORY_SIZE = 30;
 /** The last checks of each service, oldest first, by service name. */
 export type History = Record<string, HistoryEntry[]>;
 
-/** What the server sends for a round: the checks, and the history they end. */
+/** What the server sends for a round: the checks, the history they end, and the widgets. */
 export type Round = {
   checks: Checks;
   history: History;
+  widgets: Widgets;
 };

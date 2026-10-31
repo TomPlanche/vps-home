@@ -3,6 +3,7 @@
 import { resolve } from "$app/paths";
 
 import type { Checks, History, Round } from "$lib/checks";
+import type { Widgets } from "$lib/widgets";
 
 /** How often the page asks for a new round of checks. */
 export const REFRESH_MS = 30_000;
@@ -12,6 +13,8 @@ export type LiveChecks = {
   readonly checks: Checks | undefined;
   /** The last checks of each service, up to the latest round. */
   readonly history: History | undefined;
+  /** The numbers of the services that have a widget, from the latest round. */
+  readonly widgets: Widgets | undefined;
   /** When the latest round landed. */
   readonly updatedAt: number | undefined;
   /** Why the last refresh failed, cleared by the next one that works. */
@@ -27,6 +30,7 @@ export type LiveChecks = {
 export const createLiveChecks = (): LiveChecks => {
   let checks = $state<Checks | undefined>(undefined);
   let history = $state<History | undefined>(undefined);
+  let widgets = $state<Widgets | undefined>(undefined);
   let updatedAt = $state<number | undefined>(undefined);
   let error = $state<string | undefined>(undefined);
 
@@ -35,6 +39,7 @@ export const createLiveChecks = (): LiveChecks => {
   const set = (next: Round): void => {
     checks = next.checks;
     history = next.history;
+    widgets = next.widgets;
     updatedAt = Date.now();
     error = undefined;
   };
@@ -130,6 +135,9 @@ export const createLiveChecks = (): LiveChecks => {
     },
     get history() {
       return history;
+    },
+    get widgets() {
+      return widgets;
     },
     get updatedAt() {
       return updatedAt;

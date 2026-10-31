@@ -89,7 +89,8 @@ const service = (name: string, check: string | null): ServiceConfig => ({
   group: "Services",
   url: "https://example.com",
   checked: check !== null,
-  check
+  check,
+  widget: null
 });
 
 describe("checkAll", () => {

@@ -32,7 +32,7 @@ const REASONS: Record<string, string> = {
  * `fetch` throws one `TypeError("fetch failed")` for every network failure, and
  * the useful part is the code of its cause.
  */
-const reasonOf = (error: unknown, timeoutMs: number): string => {
+export const reasonOf = (error: unknown, timeoutMs: number): string => {
   if (error instanceof DOMException && error.name === "TimeoutError") {
     return `no answer in ${timeoutMs / 1000} s`;
   }

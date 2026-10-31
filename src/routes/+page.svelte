@@ -71,6 +71,7 @@
               {service}
               check={live.checks?.[service.name]}
               history={live.history?.[service.name]}
+              widget={live.widgets?.[service.name]}
             />
           </li>
         {/each}

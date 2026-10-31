@@ -1,5 +1,5 @@
 import { toPublic } from "$lib/server/config";
-import { currentRound } from "$lib/server/rounds";
+import { currentRound } from "$lib/server/state";
 import { readServices } from "$lib/server/services";
 import { groupServices } from "$lib/services";
 

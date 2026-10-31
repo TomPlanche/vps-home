@@ -11,6 +11,8 @@ import { parse, TomlError } from "smol-toml";
 
 import type { Service } from "$lib/services";
 
+import { WIDGET_TYPES, type WidgetConfig, type WidgetType } from "./widgets";
+
 /**
  * A service as the server knows it: the card, and the address it checks.
  *
@@ -20,6 +22,8 @@ import type { Service } from "$lib/services";
 export type ServiceConfig = Service & {
   /** The URL the server requests to tell whether the service answers, or `null` for none. */
   check: string | null;
+  /** The numbers the card shows from the API of the service, or `null` for none. */
+  widget: WidgetConfig | null;
 };
 
 /** A mistake in the file, worded for whoever edits it. */
@@ -31,7 +35,10 @@ export class ConfigError extends Error {
 export const DEFAULT_GROUP = "Services";
 
 /** Every key a `[[service]]` table may hold. Anything else is a typo. */
-const KEYS = new Set(["name", "group", "url", "description", "host", "check"]);
+const KEYS = new Set(["name", "group", "url", "description", "host", "check", "widget"]);
+
+/** Every key a `[service.widget]` table may hold. */
+const WIDGET_KEYS = new Set(["type", "api", "token_env"]);
 
 const isTable = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -97,6 +104,52 @@ const readCheck = (table: Record<string, unknown>, url: string, where: string): 
   return value.trim();
 };
 
+/**
+ * Reads `[service.widget]`: the type of the API, its base URL (`url` of the
+ * service when left out), and the environment variable that holds its token.
+ * The token itself never sits in the file.
+ */
+const readWidget = (
+  table: Record<string, unknown>,
+  url: string,
+  where: string
+): WidgetConfig | null => {
+  const value = table.widget;
+  if (value === undefined) {
+    return null;
+  }
+
+  if (!isTable(value)) {
+    throw new ConfigError(`${where}: \`widget\` must be a [service.widget] table`);
+  }
+
+  const at = `${where}, widget`;
+
+  const unknown = Object.keys(value).filter((key) => !WIDGET_KEYS.has(key));
+  if (unknown.length > 0) {
+    throw new ConfigError(`${at}: unknown key \`${unknown[0]}\``);
+  }
+
+  const type = requiredText(value, "type", at);
+  if (!(WIDGET_TYPES as readonly string[]).includes(type)) {
+    throw new ConfigError(`${at}: unknown type "${type}", expected ${WIDGET_TYPES.join(" or ")}`);
+  }
+
+  const api = optionalText(value, "api", at) ?? url;
+  if (!isWebUrl(api)) {
+    throw new ConfigError(`${at}: \`api\` must be an http or https URL`);
+  }
+
+  const tokenEnv = requiredText(value, "token_env", at);
+  if (!/^[A-Z_][A-Z0-9_]*$/.test(tokenEnv)) {
+    throw new ConfigError(
+      `${at}: \`token_env\` is the name of an environment variable, like PAPERLESS_TOKEN`
+    );
+  }
+
+  return { type: type as WidgetType, api, tokenEnv };
+};
+
 /** "service 3", or "service 3 (Grafana)" once the name is known. */
 const describe = (index: number, table: Record<string, unknown>): string =>
   typeof table.name === "string" && table.name.trim() !== ""
@@ -121,6 +174,7 @@ const parseService = (value: unknown, index: number): ServiceConfig => {
   }
 
   const check = readCheck(value, url, where);
+  const widget = readWidget(value, url, where);
 
   return {
     name: requiredText(value, "name", where),
@@ -129,7 +183,8 @@ const parseService = (value: unknown, index: number): ServiceConfig => {
     description: optionalText(value, "description", where),
     host: optionalText(value, "host", where),
     checked: check !== null,
-    check
+    check,
+    widget
   };
 };
 

@@ -27,7 +27,8 @@ describe("parseServices", () => {
         description: "Dashboards",
         host: "home",
         checked: true,
-        check: "https://grafana.example.com"
+        check: "https://grafana.example.com",
+        widget: null
       },
       {
         name: "Forgejo",
@@ -36,7 +37,8 @@ describe("parseServices", () => {
         description: undefined,
         host: undefined,
         checked: true,
-        check: "http://10.0.0.4:3000"
+        check: "http://10.0.0.4:3000",
+        widget: null
       }
     ]);
   });
@@ -98,6 +100,49 @@ describe("parseServices", () => {
 name = "Grafana`;
 
     expect(() => parseServices(broken)).toThrow(/^line 2, column \d+: /);
+  });
+});
+
+describe("widget", () => {
+  const paperless = { name: "Paperless", url: "http://10.0.0.4:8000" };
+
+  it("reads a widget, with the URL of the service for its API", () => {
+    const [service] = parseServices(
+      file({ ...paperless, widget: { type: "paperless", token_env: "PAPERLESS_TOKEN" } })
+    );
+
+    expect(service.widget).toEqual({
+      type: "paperless",
+      api: "http://10.0.0.4:8000",
+      tokenEnv: "PAPERLESS_TOKEN"
+    });
+  });
+
+  it("reads the URL of an API of its own", () => {
+    const [service] = parseServices(
+      file({
+        ...paperless,
+        widget: { type: "paperless", api: "http://10.0.0.4:8010", token_env: "TOKEN" }
+      })
+    );
+
+    expect(service.widget?.api).toBe("http://10.0.0.4:8010");
+  });
+
+  it.each([
+    ["a widget that is not a table", "paperless", "must be a [service.widget] table"],
+    ["an unknown type", { type: "plex", token_env: "T" }, /unknown type "plex"/],
+    ["a missing token variable", { type: "paperless" }, "`token_env` is missing"],
+    ["a token in place of a variable", { type: "paperless", token_env: "abc123" }, "the name of"],
+    ["an unknown key", { type: "paperless", token_env: "T", token: "abc" }, "unknown key `token`"]
+  ])("refuses %s", (_, widget, message) => {
+    expect(() => parseServices(file({ ...paperless, widget }))).toThrow(message);
+  });
+
+  it("names the widget in an error", () => {
+    expect(() => parseServices(file({ ...paperless, widget: { type: "paperless" } }))).toThrow(
+      "service 1 (Paperless), widget: `token_env` is missing"
+    );
   });
 });
 

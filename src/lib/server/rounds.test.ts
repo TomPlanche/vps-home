@@ -13,7 +13,8 @@ const service = (
   group: "Services",
   url: "https://example.com",
   checked: check !== null,
-  check
+  check,
+  widget: null
 });
 
 /** Rounds on a clock the test moves, with a count of the real rounds. */

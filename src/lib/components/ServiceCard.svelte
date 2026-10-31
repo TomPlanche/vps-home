@@ -2,10 +2,12 @@
   import type { Check, HistoryEntry } from "$lib/checks";
   import { formatMs } from "$lib/format";
   import type { Service } from "$lib/services";
+  import type { WidgetResult } from "$lib/widgets";
 
   import HistoryBar from "$lib/components/HistoryBar.svelte";
   import StatusTag from "$lib/components/StatusTag.svelte";
   import Tag from "$lib/components/Tag.svelte";
+  import WidgetStats from "$lib/components/WidgetStats.svelte";
 
   type Props = {
     service: Service;
@@ -13,9 +15,11 @@
     check?: Check;
     /** Its last checks, oldest first. */
     history?: HistoryEntry[];
+    /** The numbers of its widget, once read. */
+    widget?: WidgetResult;
   };
 
-  let { service, check, history }: Props = $props();
+  let { service, check, history, widget }: Props = $props();
 
   /** The address without its scheme: what tells two instances apart at a glance. */
   const address = $derived(URL.parse(service.url)?.host ?? service.url);
@@ -44,6 +48,10 @@
 
   {#if service.description}
     <p class="description">{service.description}</p>
+  {/if}
+
+  {#if widget}
+    <WidgetStats result={widget} />
   {/if}
 
   {#if service.checked}

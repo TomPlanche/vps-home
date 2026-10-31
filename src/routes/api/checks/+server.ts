@@ -1,6 +1,6 @@
 import { json } from "@sveltejs/kit";
 
-import { currentRound } from "$lib/server/rounds";
+import { currentRound } from "$lib/server/state";
 import { readServices } from "$lib/server/services";
 
 import type { RequestHandler } from "./$types";

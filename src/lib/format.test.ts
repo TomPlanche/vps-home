@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatClock, formatMs } from "./format";
+import { formatClock, formatCount, formatMs } from "./format";
 
 describe("formatMs", () => {
   it.each([
@@ -18,5 +18,13 @@ describe("formatMs", () => {
 describe("formatClock", () => {
   it("gives the hours, minutes and seconds", () => {
     expect(formatClock(new Date(2026, 9, 25, 22, 41, 5).getTime())).toBe("22:41:05");
+  });
+});
+
+describe("formatCount", () => {
+  it("groups the thousands", () => {
+    expect(formatCount(7)).toBe("7");
+    expect(formatCount(1284)).toBe("1,284");
+    expect(formatCount(1_000_000)).toBe("1,000,000");
   });
 });

@@ -13,3 +13,8 @@ const CLOCK = new Intl.DateTimeFormat("en-GB", { timeStyle: "medium" });
 
 /** "22:41:05", in the time zone of the browser. */
 export const formatClock = (at: number): string => CLOCK.format(at);
+
+const COUNT = new Intl.NumberFormat("en-GB");
+
+/** "1,284" rather than "1284". */
+export const formatCount = (value: number): string => COUNT.format(value);

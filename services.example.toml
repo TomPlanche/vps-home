@@ -14,6 +14,13 @@
 #                instead (a health endpoint, a private address); false turns
 #                the check off. Below 400 is up, 400 and above is failing, no
 #                answer in 5 s is down. A redirect counts as up, unfollowed.
+#
+# A [service.widget] table adds a few numbers of the service, read from its API:
+#
+#   type         the API: "paperless"
+#   api          the base URL of the API, `url` when left out
+#   token_env    the environment variable that holds the token of the API.
+#                The token itself stays out of this file.
 
 [[service]]
 name = "Grafana"
@@ -43,6 +50,10 @@ group = "Documents"
 url = "http://10.0.0.4:8000"
 description = "Scanned documents"
 host = "home"
+
+[service.widget]
+type = "paperless"
+token_env = "PAPERLESS_TOKEN"
 
 [[service]]
 name = "Forgejo"
