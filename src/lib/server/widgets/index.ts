@@ -11,10 +11,11 @@ import type { WidgetResult, Widgets } from "$lib/widgets";
 import { reasonOf } from "../checks";
 import type { ServiceConfig } from "../config";
 import { WidgetError, type Reader } from "./api";
+import { readImmich } from "./immich";
 import { readPaperless } from "./paperless";
 
 /** The types of widgets, by the API they read. */
-export const WIDGET_TYPES = ["paperless"] as const;
+export const WIDGET_TYPES = ["paperless", "immich"] as const;
 
 export type WidgetType = (typeof WIDGET_TYPES)[number];
 
@@ -31,7 +32,8 @@ export type WidgetConfig = {
 export const WIDGET_TIMEOUT_MS = 5000;
 
 const READERS: Record<WidgetType, Reader> = {
-  paperless: readPaperless
+  paperless: readPaperless,
+  immich: readImmich
 };
 
 /** The numbers of one service. Never throws: a failure is a result, shown on its card. */

@@ -17,7 +17,7 @@
 #
 # A [service.widget] table adds a few numbers of the service, read from its API:
 #
-#   type         the API: "paperless"
+#   type         the API: "paperless" or "immich"
 #   api          the base URL of the API, `url` when left out
 #   token_env    the environment variable that holds the token of the API.
 #                The token itself stays out of this file.
@@ -43,6 +43,11 @@ group = "Media"
 url = "https://photos.example.com"
 description = "Photos and videos"
 host = "home"
+
+[service.widget]
+type = "immich"
+api = "http://10.0.0.4:2283"
+token_env = "IMMICH_API_KEY"
 
 [[service]]
 name = "Paperless"

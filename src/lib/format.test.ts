@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatClock, formatCount, formatMs } from "./format";
+import { formatBytes, formatClock, formatCount, formatMs } from "./format";
 
 describe("formatMs", () => {
   it.each([
@@ -26,5 +26,18 @@ describe("formatCount", () => {
     expect(formatCount(7)).toBe("7");
     expect(formatCount(1284)).toBe("1,284");
     expect(formatCount(1_000_000)).toBe("1,000,000");
+  });
+});
+
+describe("formatBytes", () => {
+  it.each([
+    [0, "0 B"],
+    [512, "512 B"],
+    [1536, "1.5 KiB"],
+    [3.4 * 1024 ** 3, "3.4 GiB"],
+    [412.3 * 1024 ** 3, "412 GiB"],
+    [2 * 1024 ** 4, "2.0 TiB"]
+  ])("formats %d as %s", (bytes, text) => {
+    expect(formatBytes(bytes)).toBe(text);
   });
 });

@@ -18,3 +18,19 @@ const COUNT = new Intl.NumberFormat("en-GB");
 
 /** "1,284" rather than "1284". */
 export const formatCount = (value: number): string => COUNT.format(value);
+
+const BYTE_UNITS = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"] as const;
+
+/** "512 B", "3.4 GiB", "412 GiB": one decimal under 10, none above. */
+export const formatBytes = (bytes: number): string => {
+  let value = bytes;
+  let unit = 0;
+
+  while (value >= 1024 && unit < BYTE_UNITS.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+
+  const digits = unit === 0 || value >= 10 ? 0 : 1;
+  return `${value.toFixed(digits)} ${BYTE_UNITS[unit]}`;
+};

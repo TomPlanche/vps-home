@@ -7,7 +7,7 @@ import type { ServiceConfig } from "../config";
 import { endpoint } from "./api";
 import { fetchWidget, fetchWidgets, type WidgetConfig } from "./index";
 
-/** A fake of the APIs the widgets read, behind the prefix /paperless. */
+/** A fake of the APIs the widgets read, behind the prefixes /paperless and /immich. */
 let server: Server;
 let base: string;
 
@@ -26,6 +26,25 @@ beforeAll(async () => {
       }
       response.setHeader("content-type", "application/json");
       response.end(JSON.stringify({ ...paperless, tag_count: 12 }));
+      return;
+    }
+
+    if (request.url === "/immich/api/server/statistics") {
+      if (!authorized(request, "x-api-key", "secret")) {
+        response.writeHead(401).end();
+        return;
+      }
+      response.setHeader("content-type", "application/json");
+      response.end(
+        JSON.stringify({
+          photos: 48_213,
+          videos: 1_904,
+          usage: 412.3 * 1024 ** 3,
+          usagePhotos: 300 * 1024 ** 3,
+          usageVideos: 112.3 * 1024 ** 3,
+          usageByUser: []
+        })
+      );
       return;
     }
 
@@ -76,6 +95,28 @@ describe("paperless", () => {
     const result = await fetchWidget(widget(`${base}/paperless`), { TOKEN: "secret" });
 
     expect(result).toEqual({ stats: [{ value: "10", label: "documents" }] });
+  });
+});
+
+describe("immich", () => {
+  it("gives the photos, the videos and the space they take", async () => {
+    const config: WidgetConfig = { type: "immich", api: `${base}/immich`, tokenEnv: "KEY" };
+
+    expect(await fetchWidget(config, { KEY: "secret" })).toEqual({
+      stats: [
+        { value: "48,213", label: "photos" },
+        { value: "1,904", label: "videos" },
+        { value: "412 GiB", label: "used" }
+      ]
+    });
+  });
+
+  it("sends the key in its own header", async () => {
+    const config: WidgetConfig = { type: "immich", api: `${base}/immich`, tokenEnv: "KEY" };
+
+    expect(await fetchWidget(config, { KEY: "wrong" })).toEqual({
+      error: "the API refused the token"
+    });
   });
 });
 
