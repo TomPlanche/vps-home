@@ -35,7 +35,7 @@ export class ConfigError extends Error {
 export const DEFAULT_GROUP = "Services";
 
 /** Every key a `[[service]]` table may hold. Anything else is a typo. */
-const KEYS = new Set(["name", "group", "url", "description", "host", "check", "widget"]);
+const KEYS = new Set(["name", "group", "url", "description", "host", "icon", "check", "widget"]);
 
 /** Every key a `[service.widget]` table may hold. */
 const WIDGET_KEYS = new Set(["type", "api", "token_env"]);
@@ -150,6 +150,17 @@ const readWidget = (
   return { type: type as WidgetType, api, tokenEnv };
 };
 
+/** Reads `icon`: an http(s) URL, or a path on this site such as `/icons/immich.svg`. */
+const readIcon = (table: Record<string, unknown>, where: string): string | undefined => {
+  const icon = optionalText(table, "icon", where);
+
+  if (icon !== undefined && !isWebUrl(icon) && !icon.startsWith("/")) {
+    throw new ConfigError(`${where}: \`icon\` must be an http or https URL, or a path from /`);
+  }
+
+  return icon;
+};
+
 /** "service 3", or "service 3 (Grafana)" once the name is known. */
 const describe = (index: number, table: Record<string, unknown>): string =>
   typeof table.name === "string" && table.name.trim() !== ""
@@ -182,6 +193,7 @@ const parseService = (value: unknown, index: number): ServiceConfig => {
     url,
     description: optionalText(value, "description", where),
     host: optionalText(value, "host", where),
+    icon: readIcon(value, where),
     checked: check !== null,
     check,
     widget
@@ -195,6 +207,7 @@ export const toPublic = (service: ServiceConfig): Service => ({
   url: service.url,
   description: service.description,
   host: service.host,
+  icon: service.icon,
   checked: service.checked
 });
 

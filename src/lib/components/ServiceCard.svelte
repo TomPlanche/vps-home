@@ -5,6 +5,7 @@
   import type { WidgetResult } from "$lib/widgets";
 
   import HistoryBar from "$lib/components/HistoryBar.svelte";
+  import ServiceIcon from "$lib/components/ServiceIcon.svelte";
   import StatusTag from "$lib/components/StatusTag.svelte";
   import Tag from "$lib/components/Tag.svelte";
   import WidgetStats from "$lib/components/WidgetStats.svelte";
@@ -34,7 +35,10 @@
   rel="external"
 >
   <header>
-    <h3>{service.name}</h3>
+    <div class="title">
+      <ServiceIcon name={service.name} icon={service.icon} />
+      <h3>{service.name}</h3>
+    </div>
 
     <div class="tags">
       {#if service.host}
@@ -106,6 +110,13 @@
     justify-content: space-between;
     gap: 0.75rem;
     flex-wrap: wrap;
+  }
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
   }
 
   h3 {

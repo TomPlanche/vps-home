@@ -26,6 +26,7 @@ describe("parseServices", () => {
         url: "https://grafana.example.com",
         description: "Dashboards",
         host: "home",
+        icon: undefined,
         checked: true,
         check: "https://grafana.example.com",
         widget: null
@@ -36,6 +37,7 @@ describe("parseServices", () => {
         url: "http://10.0.0.4:3000",
         description: undefined,
         host: undefined,
+        icon: undefined,
         checked: true,
         check: "http://10.0.0.4:3000",
         widget: null
@@ -65,6 +67,21 @@ describe("parseServices", () => {
     ["a check that is a number", { ...grafana, check: 200 }, "`check` must be"]
   ])("refuses %s", (_, service, message) => {
     expect(() => parseServices(file(service))).toThrow(message);
+  });
+
+  it.each([
+    ["a URL", "https://cdn.example.com/grafana.svg"],
+    ["a path on this site", "/icons/grafana.svg"]
+  ])("reads an icon that is %s", (_, icon) => {
+    const [service] = parseServices(file({ ...grafana, icon }));
+
+    expect(service.icon).toBe(icon);
+  });
+
+  it("refuses an icon that is neither a URL nor a path", () => {
+    expect(() => parseServices(file({ ...grafana, icon: "grafana.svg" }))).toThrow(
+      "`icon` must be an http or https URL, or a path from /"
+    );
   });
 
   it.each([

@@ -9,6 +9,8 @@
 #   group        the section of the card, "Services" when left out
 #   description  a line under the name
 #   host         the machine the service runs on
+#   icon         an image for the card: a URL, or a path on this site. Left
+#                out, or when it does not load, the card shows the initials.
 #   check        what the server requests to tell whether the service answers:
 #                left out, it requests `url`; a URL requests that address
 #                instead (a health endpoint, a private address); false turns
@@ -28,6 +30,7 @@ group = "Monitoring"
 url = "https://grafana.example.com"
 description = "Dashboards of the metrics"
 host = "home"
+icon = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/grafana.svg"
 check = "http://10.0.0.4:3030/api/health"
 
 [[service]]
@@ -43,6 +46,7 @@ group = "Media"
 url = "https://photos.example.com"
 description = "Photos and videos"
 host = "home"
+icon = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg"
 
 [service.widget]
 type = "immich"

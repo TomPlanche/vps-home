@@ -17,6 +17,8 @@ export type Service = {
   description?: string;
   /** The machine the service runs on. */
   host?: string;
+  /** An image for the card: a URL, or a path on this site. */
+  icon?: string;
   /** Whether the server checks it, so whether the card has a status at all. */
   checked: boolean;
 };
@@ -47,4 +49,20 @@ export const groupServices = (services: Service[]): ServiceGroup[] => {
   }
 
   return [...groups].map(([name, members]) => ({ name, services: members }));
+};
+
+/**
+ * The letters of a card without an icon: the initials of a name of several
+ * words ("Uptime Kuma" gives "UK"), the first two letters of a single word
+ * ("Grafana" gives "Gr").
+ */
+export const monogram = (name: string): string => {
+  const words = name.split(/[\s_-]+/).filter((word) => word !== "");
+
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+
+  const [word = "?"] = words;
+  return word[0].toUpperCase() + (word[1] ?? "").toLowerCase();
 };

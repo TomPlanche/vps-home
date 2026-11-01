@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { groupServices, type Service } from "./services";
+import { groupServices, monogram, type Service } from "./services";
 
 const service = (name: string, group: string): Service => ({
   name,
@@ -35,5 +35,18 @@ describe("groupServices", () => {
 
   it("has no group without services", () => {
     expect(groupServices([])).toEqual([]);
+  });
+});
+
+describe("monogram", () => {
+  it.each([
+    ["Grafana", "Gr"],
+    ["Uptime Kuma", "UK"],
+    ["uptime-kuma", "UK"],
+    ["home assistant os", "HA"],
+    ["X", "X"],
+    ["  ", "?"]
+  ])("gives %j the letters %j", (name, letters) => {
+    expect(monogram(name)).toBe(letters);
   });
 });
