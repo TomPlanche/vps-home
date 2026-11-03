@@ -21,7 +21,7 @@
 #
 # A [service.widget] table adds a few numbers of the service, read from its API:
 #
-#   type         the API: "paperless" or "immich"
+#   type         the API: "paperless", "immich" or "forgejo"
 #   api          the base URL of the API, `url` when left out
 #   token_env    the environment variable that holds the token of the API.
 #                The token itself stays out of this file.
@@ -73,3 +73,8 @@ url = "https://git.example.com"
 description = "Git repositories"
 host = "home"
 check = "http://10.0.0.4:3000/api/healthz"
+
+[service.widget]
+type = "forgejo"
+api = "http://10.0.0.4:3000"
+token_env = "FORGEJO_TOKEN"

@@ -11,14 +11,17 @@ import { checkAll } from "./checks";
 import type { ServiceConfig } from "./config";
 import { createHistory } from "./history";
 import { createRounds } from "./rounds";
-import { fetchWidgets } from "./widgets";
+import { createWidgets } from "./widgets";
 
 /** The last checks of this server. A round adds to it once, when it ends. */
 const history = createHistory();
 
+/** The widgets of this server, with the numbers they keep between rounds. */
+const readWidgets = createWidgets(() => env);
+
 /** A round checks the services and reads their widgets at the same time. */
 const rounds = createRounds(async (services) => {
-  const [checks, widgets] = await Promise.all([checkAll(services), fetchWidgets(services, env)]);
+  const [checks, widgets] = await Promise.all([checkAll(services), readWidgets(services)]);
   history.record(checks, Date.now());
   return { checks, widgets };
 });

@@ -1,54 +1,114 @@
-import { createServer, type IncomingMessage, type Server } from "node:http";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import type { ServiceConfig } from "../config";
 import { endpoint } from "./api";
-import { fetchWidget, fetchWidgets, type WidgetConfig } from "./index";
+import { createWidgets, fetchWidget, type WidgetConfig } from "./index";
 
-/** A fake of the APIs the widgets read, behind the prefixes /paperless and /immich. */
+/** A fake of the APIs the widgets read, behind the prefixes /paperless, /immich and /forgejo. */
 let server: Server;
 let base: string;
 
 /** The statistics the fake Paperless gives, changed by some tests. */
 let paperless: { documents_total: number; documents_inbox: number | null };
+/** How long the fake Paperless waits before it answers. */
+let paperlessDelayMs = 0;
+let paperlessReads = 0;
+
+/** The repositories of the fake Forgejo. */
+const repositories = [
+  { full_name: "tom/vps-home", default_branch: "main", empty: false, mirror: false, fork: false },
+  { full_name: "tom/atkuzu", default_branch: "main", empty: false, mirror: false, fork: false },
+  { full_name: "tom/zed", default_branch: "main", empty: false, mirror: true, fork: false },
+  { full_name: "tom/cobe", default_branch: "website", empty: false, mirror: false, fork: true },
+  { full_name: "tom/notes", default_branch: "main", empty: true, mirror: false, fork: false }
+];
+
+/** The commits of the default branch of each repository of the fake Forgejo. */
+const commitCounts: Record<string, number> = {
+  "tom/vps-home": 15,
+  "tom/atkuzu": 230,
+  "tom/zed": 30_000,
+  "tom/cobe": 900
+};
+
+/** The fake Forgejo gives 2 repositories a page, whatever the page size asked. */
+const FORGEJO_PAGE = 2;
+let forgejoSearches = 0;
 
 const authorized = (request: IncomingMessage, header: string, value: string): boolean =>
   request.headers[header] === value;
 
+const json = (response: ServerResponse, body: unknown): void => {
+  response.setHeader("content-type", "application/json");
+  response.end(JSON.stringify(body));
+};
+
 beforeAll(async () => {
   server = createServer((request, response) => {
-    if (request.url === "/paperless/api/statistics/") {
+    const url = new URL(request.url ?? "/", "http://fake");
+
+    if (url.pathname === "/paperless/api/statistics/") {
       if (!authorized(request, "authorization", "Token secret")) {
         response.writeHead(401).end();
         return;
       }
-      response.setHeader("content-type", "application/json");
-      response.end(JSON.stringify({ ...paperless, tag_count: 12 }));
+      paperlessReads += 1;
+      setTimeout(() => json(response, { ...paperless, tag_count: 12 }), paperlessDelayMs);
       return;
     }
 
-    if (request.url === "/immich/api/server/statistics") {
+    if (url.pathname === "/immich/api/server/statistics") {
       if (!authorized(request, "x-api-key", "secret")) {
         response.writeHead(401).end();
         return;
       }
-      response.setHeader("content-type", "application/json");
-      response.end(
-        JSON.stringify({
-          photos: 48_213,
-          videos: 1_904,
-          usage: 412.3 * 1024 ** 3,
-          usagePhotos: 300 * 1024 ** 3,
-          usageVideos: 112.3 * 1024 ** 3,
-          usageByUser: []
-        })
-      );
+      json(response, {
+        photos: 48_213,
+        videos: 1_904,
+        usage: 412.3 * 1024 ** 3,
+        usagePhotos: 300 * 1024 ** 3,
+        usageVideos: 112.3 * 1024 ** 3,
+        usageByUser: []
+      });
       return;
     }
 
-    if (request.url === "/slow/api/statistics/") {
+    if (url.pathname.startsWith("/forgejo/api/v1/repos/")) {
+      if (!authorized(request, "authorization", "token secret")) {
+        response.writeHead(401).end();
+        return;
+      }
+
+      if (url.pathname === "/forgejo/api/v1/repos/search") {
+        const page = Number(url.searchParams.get("page"));
+        if (page === 1) {
+          forgejoSearches += 1;
+        }
+        response.setHeader("x-total-count", String(repositories.length));
+        json(response, {
+          ok: true,
+          data: repositories.slice((page - 1) * FORGEJO_PAGE, page * FORGEJO_PAGE)
+        });
+        return;
+      }
+
+      const commits = /^\/forgejo\/api\/v1\/repos\/(.+)\/commits$/.exec(url.pathname);
+      const repository = repositories.find(
+        (candidate) =>
+          candidate.full_name === decodeURIComponent(commits?.[1] ?? "") &&
+          candidate.default_branch === url.searchParams.get("sha")
+      );
+      if (repository) {
+        response.setHeader("x-total-count", String(commitCounts[repository.full_name] ?? 0));
+        json(response, [{}]);
+        return;
+      }
+    }
+
+    if (url.pathname === "/slow/api/statistics/") {
       return;
     }
 
@@ -57,6 +117,13 @@ beforeAll(async () => {
 
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+});
+
+beforeEach(() => {
+  paperless = { documents_total: 5, documents_inbox: 0 };
+  paperlessDelayMs = 0;
+  paperlessReads = 0;
+  forgejoSearches = 0;
 });
 
 afterAll(() => {
@@ -120,6 +187,32 @@ describe("immich", () => {
   });
 });
 
+const forgejo = (): WidgetConfig => ({
+  type: "forgejo",
+  api: `${base}/forgejo`,
+  tokenEnv: "TOKEN"
+});
+
+describe("forgejo", () => {
+  it("counts the repositories, the mirrors, and the commits of the own repositories", async () => {
+    // Every page of the search: 5 repositories, 2 a page. The commits leave out
+    // the mirror (zed), the fork (cobe) and the empty repository (notes).
+    expect(await fetchWidget(forgejo(), { TOKEN: "secret" })).toEqual({
+      stats: [
+        { value: "4", label: "repositories" },
+        { value: "1", label: "mirrors" },
+        { value: "245", label: "commits" }
+      ]
+    });
+  });
+
+  it("says when the API refuses the token", async () => {
+    expect(await fetchWidget(forgejo(), { TOKEN: "wrong" })).toEqual({
+      error: "the API refused the token"
+    });
+  });
+});
+
 describe("fetchWidget", () => {
   it("names the variable of a missing token", async () => {
     expect(await fetchWidget(widget(`${base}/paperless`), {})).toEqual({
@@ -156,15 +249,82 @@ const service = (name: string, config: WidgetConfig | null): ServiceConfig => ({
   widget: config
 });
 
-describe("fetchWidgets", () => {
-  it("reads the widget of each service that has one, by name", async () => {
-    paperless = { documents_total: 5, documents_inbox: 0 };
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-    const widgets = await fetchWidgets(
-      [service("Paperless", widget(`${base}/paperless`)), service("Docs", null)],
-      { TOKEN: "secret" }
-    );
+const env = () => ({ TOKEN: "secret" });
+
+describe("createWidgets", () => {
+  it("reads the widget of each service that has one, by name", async () => {
+    const readWidgets = createWidgets(env);
+
+    const widgets = await readWidgets([
+      service("Paperless", widget(`${base}/paperless`)),
+      service("Docs", null)
+    ]);
 
     expect(Object.keys(widgets)).toEqual(["Paperless"]);
+  });
+
+  it("reads Paperless again for each round", async () => {
+    const readWidgets = createWidgets(env);
+    const services = [service("Paperless", widget(`${base}/paperless`))];
+
+    await readWidgets(services);
+    await readWidgets(services);
+
+    expect(paperlessReads).toBe(2);
+  });
+
+  it("keeps the numbers of Forgejo for 10 minutes", async () => {
+    let time = 0;
+    const readWidgets = createWidgets(env, 5000, () => time);
+    const services = [service("Forgejo", forgejo())];
+
+    await readWidgets(services);
+    time += 9 * 60_000;
+    await readWidgets(services);
+    expect(forgejoSearches).toBe(1);
+
+    time += 60_000;
+    await readWidgets(services);
+    expect(forgejoSearches).toBe(2);
+  });
+
+  it("reads again when the widget changes in the file", async () => {
+    const readWidgets = createWidgets(env);
+
+    await readWidgets([service("Forgejo", forgejo())]);
+    await readWidgets([service("Forgejo", { ...forgejo(), api: `${base}/forgejo/` })]);
+
+    expect(forgejoSearches).toBe(2);
+  });
+
+  it("goes on with the last numbers while a slow read runs", async () => {
+    const readWidgets = createWidgets(env, 50);
+    const services = [service("Paperless", widget(`${base}/paperless`))];
+    paperless = { documents_total: 5, documents_inbox: null };
+
+    expect(await readWidgets(services)).toMatchObject({
+      Paperless: { stats: [{ value: "5", label: "documents" }] }
+    });
+
+    paperless = { documents_total: 7, documents_inbox: null };
+    paperlessDelayMs = 200;
+    expect(await readWidgets(services)).toMatchObject({
+      Paperless: { stats: [{ value: "5", label: "documents" }] }
+    });
+
+    // The slow read lands, and the next round has its numbers.
+    await sleep(300);
+    paperlessDelayMs = 0;
+    expect(await readWidgets(services)).toMatchObject({
+      Paperless: { stats: [{ value: "7", label: "documents" }] }
+    });
+  });
+
+  it("has no numbers yet for a first read slower than the wait", async () => {
+    const readWidgets = createWidgets(env, 50);
+
+    expect(await readWidgets([service("Slow", widget(`${base}/slow`))])).toEqual({});
   });
 });

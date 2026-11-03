@@ -15,15 +15,15 @@ export const endpoint = (api: string, path: string): string =>
   `${api.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
 
 /**
- * A GET that expects JSON, with the failures of an API worded for a card.
+ * A GET, with the failures of an API worded for a card. The caller reads the body.
  *
  * @throws {WidgetError} when the API refuses the token or answers with an error.
  */
-export const getJson = async <T>(
+export const get = async (
   url: string,
   headers: Record<string, string>,
   signal: AbortSignal
-): Promise<T> => {
+): Promise<Response> => {
   const response = await fetch(url, {
     signal,
     headers: { accept: "application/json", "user-agent": "vps-home", ...headers }
@@ -39,5 +39,16 @@ export const getJson = async <T>(
     throw new WidgetError(`the API answered ${response.status}`);
   }
 
-  return (await response.json()) as T;
+  return response;
 };
+
+/**
+ * A GET that expects JSON.
+ *
+ * @throws {WidgetError} when the API refuses the token or answers with an error.
+ */
+export const getJson = async <T>(
+  url: string,
+  headers: Record<string, string>,
+  signal: AbortSignal
+): Promise<T> => (await (await get(url, headers, signal)).json()) as T;

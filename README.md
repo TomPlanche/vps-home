@@ -9,7 +9,7 @@ A home page for the services of a few servers. The page shows one card for each 
 - The page asks for new checks every 30 seconds while its tab is visible. A hidden tab sends no request.
 - Each card shows the last 30 checks of its service as a bar.
 - A line at the top counts the services in each state. The title of the tab shows the problems, for example `1 down · vps-home`.
-- A widget shows a few numbers of a service: the documents of Paperless-ngx, the photos and videos of Immich.
+- A widget shows a few numbers of a service: the documents of Paperless-ngx, the photos and videos of Immich, the repositories and commits of Forgejo.
 - A card shows the icon of its service, or the initials of its name.
 
 ## How it works
@@ -29,6 +29,14 @@ A check sends a `GET` to the check address and does not follow redirects:
 The `expect` key of a service changes the rule for `up`. With `expect = [200, 503]`, only 200 and 503 are `up`, and each other status is `failing`. Use it for a site that answers 503 on purpose, for example in maintenance. The card shows the status in the color of `up`: `503` in green.
 
 The server keeps the last 30 checks of each service in memory. A restart clears this history. The server checks the services only while a page asks for checks, so the history has gaps when no tab is open.
+
+The server reads the widgets in the same round as the checks:
+
+- The Paperless and Immich widgets send one request each, so the server reads them again for each round.
+- The Forgejo widget sends one request for each repository, so the server reads it again every 10 minutes at most.
+- A round waits 5 seconds at most for a widget. If a read takes longer, the read continues and the round shows the last numbers of the widget. Thus, a slow API does not stop the checks.
+
+The Forgejo widget shows 3 numbers. `repositories` counts the repositories that are not mirrors. `mirrors` counts the mirrors. `commits` adds up the commits of the default branch of each repository that is not a mirror, a fork or empty, because the history of a mirror or a fork is mostly the work of other people.
 
 ## Configuration
 
@@ -53,7 +61,7 @@ A `[service.widget]` table adds a widget to the card:
 
 | Key         | Necessary | Value                                                         |
 | ----------- | --------- | ------------------------------------------------------------- |
-| `type`      | yes       | `paperless` or `immich`.                                      |
+| `type`      | yes       | `paperless`, `immich` or `forgejo`.                           |
 | `api`       | no        | The base URL of the API. The default is `url` of the service. |
 | `token_env` | yes       | The name of the environment variable that holds the token.    |
 
@@ -63,11 +71,11 @@ If the file has an error, the page shows a 500 error with the line or the servic
 
 ### Environment variables
 
-| Variable                            | Use                                                                                           |
-| ----------------------------------- | --------------------------------------------------------------------------------------------- |
-| `SERVICES_FILE`                     | The path of the services file. The default is `services.toml`.                                |
-| `PAPERLESS_TOKEN`, `IMMICH_API_KEY` | The tokens of the widgets. The names come from `token_env` in the services file.              |
-| `HOST`, `PORT`                      | The address and the port of the server (Node adapter). The defaults are `0.0.0.0` and `3000`. |
+| Variable                                             | Use                                                                                           |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `SERVICES_FILE`                                      | The path of the services file. The default is `services.toml`.                                |
+| `PAPERLESS_TOKEN`, `IMMICH_API_KEY`, `FORGEJO_TOKEN` | The tokens of the widgets. The names come from `token_env` in the services file.              |
+| `HOST`, `PORT`                                       | The address and the port of the server (Node adapter). The defaults are `0.0.0.0` and `3000`. |
 
 `.env.example` lists these variables. `pnpm start` reads `.env` when the file exists.
 
@@ -75,6 +83,7 @@ The tokens of the widgets:
 
 - Paperless-ngx: the API token of a user, from the profile page of this user.
 - Immich: an API key of an admin user, with the `server.statistics` permission. The statistics of the server are for admins only.
+- Forgejo: an access token of a user (Settings, Applications), with the `read:repository` scope. The widget sees the repositories of this user, private ones included.
 
 ## Development
 
