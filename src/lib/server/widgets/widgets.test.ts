@@ -152,6 +152,7 @@ const service = (name: string, config: WidgetConfig | null): ServiceConfig => ({
   url: "https://example.com",
   checked: false,
   check: null,
+  expect: null,
   widget: config
 });
 

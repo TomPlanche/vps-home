@@ -70,6 +70,20 @@ describe("checkUrl", () => {
     expect(await checkUrl(`${base}/missing`)).toMatchObject({ state: "failing", status: 404 });
   });
 
+  it("counts an expected error status as up", async () => {
+    expect(await checkUrl(`${base}/broken`, 1000, [200, 503])).toMatchObject({
+      state: "up",
+      status: 503
+    });
+  });
+
+  it("counts only the expected statuses as up, a redirect included", async () => {
+    expect(await checkUrl(`${base}/login`, 1000, [200])).toMatchObject({
+      state: "failing",
+      status: 302
+    });
+  });
+
   it("gives up on a service that does not answer", async () => {
     const check = await checkUrl(`${base}/slow`, 100);
 
@@ -90,6 +104,7 @@ const service = (name: string, check: string | null): ServiceConfig => ({
   url: "https://example.com",
   checked: check !== null,
   check,
+  expect: null,
   widget: null
 });
 
@@ -102,6 +117,16 @@ describe("checkAll", () => {
     ]);
 
     expect(Object.keys(checks)).toEqual(["A", "B"]);
+    expect(checks.A.state).toBe("up");
+    expect(checks.B.state).toBe("failing");
+  });
+
+  it("checks each service with its expected statuses", async () => {
+    const checks = await checkAll([
+      { ...service("A", `${base}/broken`), expect: [503] },
+      service("B", `${base}/broken`)
+    ]);
+
     expect(checks.A.state).toBe("up");
     expect(checks.B.state).toBe("failing");
   });

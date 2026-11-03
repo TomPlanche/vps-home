@@ -29,6 +29,7 @@ describe("parseServices", () => {
         icon: undefined,
         checked: true,
         check: "https://grafana.example.com",
+        expect: null,
         widget: null
       },
       {
@@ -40,6 +41,7 @@ describe("parseServices", () => {
         icon: undefined,
         checked: true,
         check: "http://10.0.0.4:3000",
+        expect: null,
         widget: null
       }
     ]);
@@ -117,6 +119,32 @@ describe("parseServices", () => {
 name = "Grafana`;
 
     expect(() => parseServices(broken)).toThrow(/^line 2, column \d+: /);
+  });
+});
+
+describe("expect", () => {
+  it("reads the statuses that count as up", () => {
+    const [service] = parseServices(file({ ...grafana, expect: [200, 503] }));
+
+    expect(service.expect).toEqual([200, 503]);
+  });
+
+  it.each([
+    ["a single status", 503],
+    ["an empty list", []],
+    ["a status as a string", ["503"]],
+    ["a status out of range", [200, 99]],
+    ["a status with a decimal", [200.5]]
+  ])("refuses %s", (_, value) => {
+    expect(() => parseServices(file({ ...grafana, expect: value }))).toThrow(
+      "`expect` must be a list of HTTP statuses"
+    );
+  });
+
+  it("refuses statuses for a service that is not checked", () => {
+    expect(() => parseServices(file({ ...grafana, check: false, expect: [200] }))).toThrow(
+      "`expect` has no use when `check` is false"
+    );
   });
 });
 

@@ -14,6 +14,7 @@ const service = (
   url: "https://example.com",
   checked: check !== null,
   check,
+  expect: null,
   widget: null
 });
 

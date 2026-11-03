@@ -16,6 +16,8 @@
 #                instead (a health endpoint, a private address); false turns
 #                the check off. Below 400 is up, 400 and above is failing, no
 #                answer in 5 s is down. A redirect counts as up, unfollowed.
+#   expect       the HTTP statuses that count as up, in place of "below 400":
+#                [200, 503] for a site that answers 503 in maintenance
 #
 # A [service.widget] table adds a few numbers of the service, read from its API:
 #

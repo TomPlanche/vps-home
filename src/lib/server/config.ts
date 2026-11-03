@@ -22,6 +22,8 @@ import { WIDGET_TYPES, type WidgetConfig, type WidgetType } from "./widgets";
 export type ServiceConfig = Service & {
   /** The URL the server requests to tell whether the service answers, or `null` for none. */
   check: string | null;
+  /** The HTTP statuses that count as up, or `null` for the default: below 400. */
+  expect: number[] | null;
   /** The numbers the card shows from the API of the service, or `null` for none. */
   widget: WidgetConfig | null;
 };
@@ -35,7 +37,17 @@ export class ConfigError extends Error {
 export const DEFAULT_GROUP = "Services";
 
 /** Every key a `[[service]]` table may hold. Anything else is a typo. */
-const KEYS = new Set(["name", "group", "url", "description", "host", "icon", "check", "widget"]);
+const KEYS = new Set([
+  "name",
+  "group",
+  "url",
+  "description",
+  "host",
+  "icon",
+  "check",
+  "expect",
+  "widget"
+]);
 
 /** Every key a `[service.widget]` table may hold. */
 const WIDGET_KEYS = new Set(["type", "api", "token_env"]);
@@ -102,6 +114,36 @@ const readCheck = (table: Record<string, unknown>, url: string, where: string): 
   }
 
   return value.trim();
+};
+
+/** An HTTP status: a whole number from 100 to 599. */
+const isStatus = (value: unknown): value is number =>
+  Number.isInteger(value) && (value as number) >= 100 && (value as number) <= 599;
+
+/**
+ * Reads `expect`: the HTTP statuses that count as up, in place of the default
+ * (below 400). A site in maintenance answers 503 on purpose, for example, and
+ * `expect = [200, 503]` keeps it up in both cases.
+ */
+const readExpect = (
+  table: Record<string, unknown>,
+  check: string | null,
+  where: string
+): number[] | null => {
+  const value = table.expect;
+  if (value === undefined) {
+    return null;
+  }
+
+  if (check === null) {
+    throw new ConfigError(`${where}: \`expect\` has no use when \`check\` is false`);
+  }
+
+  if (!Array.isArray(value) || value.length === 0 || !value.every(isStatus)) {
+    throw new ConfigError(`${where}: \`expect\` must be a list of HTTP statuses, like [200, 503]`);
+  }
+
+  return value;
 };
 
 /**
@@ -185,6 +227,7 @@ const parseService = (value: unknown, index: number): ServiceConfig => {
   }
 
   const check = readCheck(value, url, where);
+  const expect = readExpect(value, check, where);
   const widget = readWidget(value, url, where);
 
   return {
@@ -196,6 +239,7 @@ const parseService = (value: unknown, index: number): ServiceConfig => {
     icon: readIcon(value, where),
     checked: check !== null,
     check,
+    expect,
     widget
   };
 };

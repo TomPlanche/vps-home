@@ -36,7 +36,7 @@ export const createRounds = <T>(
 
   return (services) => {
     const key = JSON.stringify(
-      services.map((service) => [service.name, service.check, service.widget])
+      services.map((service) => [service.name, service.check, service.expect, service.widget])
     );
     const at = now();
 

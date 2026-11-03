@@ -26,6 +26,8 @@ A check sends a `GET` to the check address and does not follow redirects:
 | A status of 400 or more                    | `failing` |
 | No answer in 5 seconds, or a network error | `down`    |
 
+The `expect` key of a service changes the rule for `up`. With `expect = [200, 503]`, only 200 and 503 are `up`, and each other status is `failing`. Use it for a site that answers 503 on purpose, for example in maintenance. The card shows the status in the color of `up`: `503` in green.
+
 The server keeps the last 30 checks of each service in memory. A restart clears this history. The server checks the services only while a page asks for checks, so the history has gaps when no tab is open.
 
 ## Configuration
@@ -45,6 +47,7 @@ Each `[[service]]` table is one card, in the order of the file:
 | `host`        | no        | The machine of the service, shown as a tag.                                                               |
 | `icon`        | no        | An image: a URL, or a path on this site. Without an icon, the card shows initials.                        |
 | `check`       | no        | The address that the server checks. The default is `url`. Set `false` to stop the checks of this service. |
+| `expect`      | no        | The HTTP statuses that count as `up`, for example `[200, 503]`. The default is any status below 400.      |
 
 A `[service.widget]` table adds a widget to the card:
 

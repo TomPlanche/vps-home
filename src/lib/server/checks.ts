@@ -45,8 +45,16 @@ export const reasonOf = (error: unknown, timeoutMs: number): string => {
   return error instanceof Error ? error.message : String(error);
 };
 
-/** Requests one URL and says what came back. Never throws: a failure is a result. */
-export const checkUrl = async (url: string, timeoutMs = CHECK_TIMEOUT_MS): Promise<Check> => {
+/**
+ * Requests one URL and says what came back. Never throws: a failure is a result.
+ *
+ * `expect` lists the statuses that count as up. Left out, a status below 400 is up.
+ */
+export const checkUrl = async (
+  url: string,
+  timeoutMs = CHECK_TIMEOUT_MS,
+  expect: number[] | null = null
+): Promise<Check> => {
   const started = performance.now();
   const elapsed = (): number => Math.round(performance.now() - started);
 
@@ -65,8 +73,10 @@ export const checkUrl = async (url: string, timeoutMs = CHECK_TIMEOUT_MS): Promi
     // rather than whenever the body gets collected.
     await response.body?.cancel();
 
+    const up = expect ? expect.includes(response.status) : response.status < 400;
+
     return {
-      state: response.status < 400 ? "up" : "failing",
+      state: up ? "up" : "failing",
       status: response.status,
       ms
     };
@@ -86,7 +96,8 @@ export const checkAll = async (
 
   const results = await Promise.all(
     checked.map(
-      async (service) => [service.name, await checkUrl(service.check, timeoutMs)] as const
+      async (service) =>
+        [service.name, await checkUrl(service.check, timeoutMs, service.expect)] as const
     )
   );
 
