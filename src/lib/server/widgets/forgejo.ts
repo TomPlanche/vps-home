@@ -16,7 +16,7 @@
  */
 
 import type { Stat } from "$lib/widgets";
-import { formatCount } from "$lib/format";
+import { formatCount, plural } from "$lib/format";
 
 import { endpoint, get, type Reader } from "./api";
 
@@ -148,16 +148,16 @@ export const readForgejo: Reader = async (api, token, signal) => {
     countCommits(api, repository, headers, signal)
   );
 
+  const sources = repositories.length - mirrors;
+  const commits = counts.reduce((sum, count) => sum + count, 0);
+
   const stats: Stat[] = [
-    { value: formatCount(repositories.length - mirrors), label: "repositories" }
+    { value: formatCount(sources), label: plural(sources, "repository", "repositories") }
   ];
   if (mirrors > 0) {
-    stats.push({ value: formatCount(mirrors), label: "mirrors" });
+    stats.push({ value: formatCount(mirrors), label: plural(mirrors, "mirror") });
   }
-  stats.push({
-    value: formatCount(counts.reduce((sum, count) => sum + count, 0)),
-    label: "commits"
-  });
+  stats.push({ value: formatCount(commits), label: plural(commits, "commit") });
 
   return stats;
 };

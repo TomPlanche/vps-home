@@ -4,7 +4,7 @@
  * The token is the API token of a user, from the profile page of Paperless.
  */
 
-import { formatCount } from "$lib/format";
+import { formatCount, plural } from "$lib/format";
 
 import { endpoint, getJson, type Reader } from "./api";
 
@@ -22,7 +22,12 @@ export const readPaperless: Reader = async (api, token, signal) => {
     signal
   );
 
-  const stats = [{ value: formatCount(statistics.documents_total), label: "documents" }];
+  const stats = [
+    {
+      value: formatCount(statistics.documents_total),
+      label: plural(statistics.documents_total, "document")
+    }
+  ];
 
   if (statistics.documents_inbox !== null) {
     stats.push({ value: formatCount(statistics.documents_inbox), label: "in the inbox" });

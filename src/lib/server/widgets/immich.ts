@@ -5,7 +5,7 @@
  * an admin user, with the `server.statistics` permission at least.
  */
 
-import { formatBytes, formatCount } from "$lib/format";
+import { formatBytes, formatCount, plural } from "$lib/format";
 
 import { endpoint, getJson, type Reader } from "./api";
 
@@ -25,8 +25,8 @@ export const readImmich: Reader = async (api, token, signal) => {
   );
 
   return [
-    { value: formatCount(statistics.photos), label: "photos" },
-    { value: formatCount(statistics.videos), label: "videos" },
+    { value: formatCount(statistics.photos), label: plural(statistics.photos, "photo") },
+    { value: formatCount(statistics.videos), label: plural(statistics.videos, "video") },
     { value: formatBytes(statistics.usage), label: "used" }
   ];
 };

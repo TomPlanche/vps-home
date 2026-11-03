@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatBytes, formatClock, formatCount, formatMs } from "./format";
+import { formatBytes, formatClock, formatCount, formatMs, plural } from "./format";
 
 describe("formatMs", () => {
   it.each([
@@ -39,5 +39,20 @@ describe("formatBytes", () => {
     [2 * 1024 ** 4, "2.0 TiB"]
   ])("formats %d as %s", (bytes, text) => {
     expect(formatBytes(bytes)).toBe(text);
+  });
+});
+
+describe("plural", () => {
+  it.each([
+    [0, "photos"],
+    [1, "photo"],
+    [2, "photos"]
+  ])("gives %d %s", (count, noun) => {
+    expect(plural(count, "photo")).toBe(noun);
+  });
+
+  it("takes an irregular plural", () => {
+    expect(plural(1, "repository", "repositories")).toBe("repository");
+    expect(plural(4, "repository", "repositories")).toBe("repositories");
   });
 });

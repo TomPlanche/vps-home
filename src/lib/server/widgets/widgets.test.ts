@@ -156,6 +156,14 @@ describe("paperless", () => {
     });
   });
 
+  it("says 1 document, not 1 documents", async () => {
+    paperless = { documents_total: 1, documents_inbox: null };
+
+    expect(await fetchWidget(widget(`${base}/paperless`), { TOKEN: "secret" })).toEqual({
+      stats: [{ value: "1", label: "document" }]
+    });
+  });
+
   it("leaves the inbox out when Paperless has no inbox tag", async () => {
     paperless = { documents_total: 10, documents_inbox: null };
 
@@ -200,7 +208,7 @@ describe("forgejo", () => {
     expect(await fetchWidget(forgejo(), { TOKEN: "secret" })).toEqual({
       stats: [
         { value: "4", label: "repositories" },
-        { value: "1", label: "mirrors" },
+        { value: "1", label: "mirror" },
         { value: "245", label: "commits" }
       ]
     });

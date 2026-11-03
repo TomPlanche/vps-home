@@ -19,6 +19,10 @@ const COUNT = new Intl.NumberFormat("en-GB");
 /** "1,284" rather than "1284". */
 export const formatCount = (value: number): string => COUNT.format(value);
 
+/** The noun that agrees with a count: "1 photo", "0 photos", "48,213 photos". */
+export const plural = (count: number, singular: string, many = `${singular}s`): string =>
+  count === 1 ? singular : many;
+
 const BYTE_UNITS = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"] as const;
 
 /** "512 B", "3.4 GiB", "412 GiB": one decimal under 10, none above. */
